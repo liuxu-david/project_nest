@@ -8,6 +8,11 @@ import { TimeInterceptor } from './time.interceptor';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets('public',{prefix:'/static'})
+  // 不传入任何配置，允许所有跨域
+  app.enableCors()
+
+  // 统一设置路由前缀
+  app.setGlobalPrefix('/api')
 
   // 全局中间件
   // app.use(function(req:Request,res:Response,next:NextFunction){
@@ -21,6 +26,9 @@ async function bootstrap() {
 
   // 全局拦截器
   // app.useGlobalInterceptors(new TimeInterceptor())
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.PORT ?? 5000
+  await app.listen(port);
+  console.log(`运行在${port}`);
+  
 }
 bootstrap();

@@ -5,9 +5,10 @@ import { PersonModule } from './person/person.module';
 import { LogMiddleware } from './log.middleware';
 import { TimeInterceptor } from './time.interceptor';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
-  imports: [PersonModule],
+  imports: [PersonModule, UploadModule],
   controllers: [AppController],
   providers: [AppService,{
     provide: 'person2',
