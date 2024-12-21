@@ -19,4 +19,19 @@ export class UploadService {
     }
     
   }
+  handleUploadFile(id,fileHash,file){
+    // 1.处理文件放入临时文件夹
+    const targetDir = path.resolve('FilesList',fileHash) 
+    // 2.判断该hash是否存在
+    if(!fs.existsSync(targetDir)){
+      // 3.不存在则创建该文件夹
+      fs.mkdirSync(targetDir,{recursive:true})
+    }
+    // 4.校验接口已经过滤了已存在的分片，所以这里不用判断是否已存在分片
+    // 5.写入分片
+    const chunkFilePath = path.resolve(targetDir,`${id}.part`)
+    // 6.将临时分片移到目标目录下
+    fs.renameSync(file.path,chunkFilePath)
+    
+  }
 }

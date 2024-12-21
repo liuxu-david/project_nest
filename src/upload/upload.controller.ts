@@ -8,6 +8,7 @@ import {
 import { UploadService } from './upload.service';
 import { fileVerifyDto } from './dto/verify-upload.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { infoDto } from './dto/upload.dto';
 
 @Controller('upload')
 export class UploadController {
@@ -20,8 +21,9 @@ export class UploadController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('file',{dest:'FilesList'}))
-  uploadFile(@UploadedFile() file:Express.Multer.File){
-
+  @UseInterceptors(FileInterceptor('chunkfile',{dest:'FilesList'}))
+  uploadFile(@UploadedFile() file:Express.Multer.File,@Body() info:infoDto){
+    const {id,fileHash} = info
+    this.uploadService.handleUploadFile(id,fileHash,file)
   }
 }
