@@ -61,12 +61,11 @@ export class UploadService {
     console.log("fileMd5",fileMd5);
     
     if(fileMd5 === fileHash){
-      console.log("上传obs");
-      
-      // 上传OBS
+      // console.log("上传obs");
+      // 上传OBS(这里不做上传了,直接在前端使用完美oss上传方案)
+       // 删除临时文件
+      await this.handleDeleteFile(dirPath)
     }
-    // 删除临时文件
-    await this.handleDeleteFile(dirPath)
     return []
    } catch (error) {
     console.log("merge",error);
@@ -80,14 +79,16 @@ export class UploadService {
       const hash = crypto.createHash('md5');
       const fileStream = fs.createReadStream(path);
       fileStream.on('data', (chunk) => {
+        console.log(chunk);
         hash.update(chunk);
       });
       fileStream.on('end', () => {
         const fileMd5 = hash.digest('hex');
+        fileStream.close()
         resolve(fileMd5)
       });
       fileStream.on('error', (err) => {
-        console.error(`File read error: ${err.message}`);
+        console.error(`File read error: ${err}`);
         reject(err);
       });
     })

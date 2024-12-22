@@ -3,10 +3,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UploadModule } from './modules/upload/upload.module';
 import { ConfigModule } from '@nestjs/config';
+import { OssModule } from './modules/oss/oss.module';
 import config from "./config/index";
 
 @Module({
-  imports: [...setupModules(), UploadModule],
+  imports: [...setupModules(), UploadModule, OssModule],
   controllers: [AppController],
   providers: [AppService],
 })
