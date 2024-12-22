@@ -54,7 +54,12 @@ export class UploadService {
       const chunkData = fs.readFileSync(readPath);
       writeStream.write(chunkData)
     }
-    await writeStream.end()
+    // 等待写入流完成再去执行校验
+    await new Promise((resolve, reject) => {
+      writeStream.end();
+      writeStream.on('finish', resolve); // 确认写入完成
+      writeStream.on('error', reject);  // 捕获写入错误
+    });
     // hash校验
     console.log("outPath",outPath);
     const fileMd5 = await this.handleMd5File(outPath)
@@ -76,15 +81,18 @@ export class UploadService {
   // 读取文件夹下的文件，然后进行md5处理
   handleMd5File(path){
     return new Promise((resolve,reject)=>{
+      fs.access(path, (err) => {
+        if (err) {
+          return reject(new Error(`File not found: ${path}`));
+        }
+      })
       const hash = crypto.createHash('md5');
       const fileStream = fs.createReadStream(path);
       fileStream.on('data', (chunk) => {
-        console.log(chunk);
         hash.update(chunk);
       });
       fileStream.on('end', () => {
         const fileMd5 = hash.digest('hex');
-        fileStream.close()
         resolve(fileMd5)
       });
       fileStream.on('error', (err) => {
@@ -94,14 +102,6 @@ export class UploadService {
     })
   }
   handleDeleteFile(dirPath){
-    return new Promise((resolve, reject) => {
-      fs.rm(dirPath, { recursive: true, force: true }, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve('临时文件删除成功');
-        }
-      });
-    })
+    fs.rmSync(dirPath, { recursive: true, force: true })
   }
 }
