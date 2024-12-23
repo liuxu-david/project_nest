@@ -24,12 +24,14 @@ export class OssService {
     const location = await this.aliOssClient.getBucketLocation();
     const oss_setting = this.configService.get('oss_setting')
     const host = `http://${oss_setting.bucket}.${location.location}.aliyuncs.com`;
+    // 指定上传到OSS的文件前缀。
+    const dir = new Date().toLocaleDateString();
     return {
       policy: formData.policy,
       signature: formData.Signature,
       ossAccessKeyId: formData.OSSAccessKeyId,
       host,
-      dir: oss_setting.dir
+      dir
     };
   }
 }

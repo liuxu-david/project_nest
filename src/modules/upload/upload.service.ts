@@ -46,21 +46,10 @@ export class UploadService {
     if(totalNum!==allFileInfo.length){
       // 返回分片缺失，需要重新上传
     }
-    // 开始执行合并
+    // 开始执行合并(文件流进行边读边写，提高性能)
     const outPath = path.resolve('FilesList',fileHash,name)
-    const writeStream = fs.createWriteStream(outPath)
-    for(let i = 0;i<allFileInfo.length;i++){
-      const readPath = path.resolve(dirPath,allFileInfo[i])
-      const chunkData = fs.readFileSync(readPath);
-      writeStream.write(chunkData)
-    }
-    // 等待写入流完成再去执行校验
-    await new Promise((resolve, reject) => {
-      writeStream.end();
-      writeStream.on('finish', resolve); // 确认写入完成
-      writeStream.on('error', reject);  // 捕获写入错误
-    });
-    // hash校验
+    await this.handleFlieStream(dirPath,outPath,allFileInfo)
+    // 写入完毕，md5处理然后hash校验
     console.log("outPath",outPath);
     const fileMd5 = await this.handleMd5File(outPath)
     console.log("fileMd5",fileMd5);
@@ -76,6 +65,40 @@ export class UploadService {
     console.log("merge",error);
     
    }
+  }
+  // 文件流的读写，提高性能
+  /* 
+  dirPath:读取目录
+  outPath：输出目录
+  allFileInfo:分片
+   */
+  async handleFlieStream(dirPath,outPath,allFileInfo){
+    try {
+      const writeStream = fs.createWriteStream(outPath)
+      for(const chunk of allFileInfo){
+        const chunkPath = path.resolve(dirPath,chunk)
+        const readStream = fs.createReadStream(chunkPath) //读取流，读每一个分片
+        await new Promise<void>((resolve, reject) => {
+          readStream.pipe(writeStream,{end:false}) //将读取的直接传递写入流中（参数是传输完毕后不关闭写入流）
+          readStream.on('end',resolve)//继续读取下一个
+          readStream.on('error',reject) //抛出异常
+        })
+      }
+      // for(let i = 0;i<allFileInfo.length;i++){
+      //   const readPath = path.resolve(dirPath,allFileInfo[i])
+      //   const chunkData = fs.readFileSync(readPath);
+      //   writeStream.write(chunkData)
+      // }
+      // 等待所有分片读取写入完毕后手动关闭写入流
+      await new Promise((resolve, reject) => {
+        writeStream.end();//手动关闭
+        writeStream.on('finish', resolve); // 确认写入完成
+        writeStream.on('error', reject);  // 捕获写入错误
+      });
+    } catch (error) {
+      console.log("文件读写出现问题",error);
+      
+    }
   }
 
   // 读取文件夹下的文件，然后进行md5处理
@@ -101,7 +124,9 @@ export class UploadService {
       });
     })
   }
+  // 删除文件以及目录
   handleDeleteFile(dirPath){
     fs.rmSync(dirPath, { recursive: true, force: true })
   }
+
 }
