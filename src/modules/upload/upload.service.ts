@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable} from '@nestjs/common';
 import * as path from 'path';
 import * as fs from "fs";
 import * as crypto from 'crypto'
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 
 @Injectable()
 export class UploadService {
+@Inject(WINSTON_MODULE_PROVIDER) private logger:Logger
+
   handleVerify(info){
     const dirPath = path.resolve('FilesList',info.fileHash)
-    console.log(dirPath);
+    this.logger.info(`dirPath:${dirPath}`,{ context:'UploadService' });
     // 判断当前分片是否存在
     try {
       const hasCurDir = fs.readdirSync(dirPath);
@@ -50,20 +54,18 @@ export class UploadService {
     const outPath = path.resolve('FilesList',fileHash,name)
     await this.handleFlieStream(dirPath,outPath,allFileInfo)
     // 写入完毕，md5处理然后hash校验
-    console.log("outPath",outPath);
+    this.logger.info(`outPath:${outPath}`,'描述');
     const fileMd5 = await this.handleMd5File(outPath)
-    console.log("fileMd5",fileMd5);
+    this.logger.info(`fileMd5:${fileMd5}`);
     
     if(fileMd5 === fileHash){
-      // console.log("上传obs");
       // 上传OBS(这里不做上传了,直接在前端使用完美oss上传方案)
        // 删除临时文件
       await this.handleDeleteFile(dirPath)
     }
     return []
    } catch (error) {
-    console.log("merge",error);
-    
+    this.logger.error(`merge:${error}`);
    }
   }
   // 文件流的读写，提高性能
@@ -96,8 +98,7 @@ export class UploadService {
         writeStream.on('error', reject);  // 捕获写入错误
       });
     } catch (error) {
-      console.log("文件读写出现问题",error);
-      
+      this.logger.error(`文件读写出现问题${error}`);
     }
   }
 
@@ -106,7 +107,7 @@ export class UploadService {
     return new Promise((resolve,reject)=>{
       fs.access(path, (err) => {
         if (err) {
-          return reject(new Error(`File not found: ${path}`));
+          return reject(new Error(`文件没有找到${path}`));
         }
       })
       const hash = crypto.createHash('md5');
@@ -119,7 +120,7 @@ export class UploadService {
         resolve(fileMd5)
       });
       fileStream.on('error', (err) => {
-        console.error(`File read error: ${err}`);
+        this.logger.error(`文件写入失败: ${err}`);
         reject(err);
       });
     })
