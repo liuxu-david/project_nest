@@ -62,6 +62,8 @@ export class UploadService {
       // 上传OBS(这里不做上传了,直接在前端使用完美oss上传方案)
        // 删除临时文件
       await this.handleDeleteFile(dirPath)
+      console.log('上传成功,清空并删除了文件',dirPath);
+      
     }
     return []
    } catch (error) {
@@ -92,7 +94,7 @@ export class UploadService {
       //   writeStream.write(chunkData)
       // }
       // 等待所有分片读取写入完毕后手动关闭写入流
-      await new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         writeStream.end();//手动关闭
         writeStream.on('finish', resolve); // 确认写入完成
         writeStream.on('error', reject);  // 捕获写入错误
